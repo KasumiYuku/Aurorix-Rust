@@ -1,0 +1,24 @@
+[package]
+name = "aurorix-render"
+version.workspace = true
+edition.workspace = true
+rust-version.workspace = true
+license.workspace = true
+
+[dependencies]
+aurorix-core.workspace = true
+ash = { version = "0.38", optional = true }
+aurorix-log.workspace = true
+bytes.workspace = true
+dashmap.workspace = true
+parking_lot.workspace = true
+thiserror.workspace = true
+skia-safe.workspace = true
+webp.workspace = true
+tokio.workspace = true
+crc32fast = "1"
+fdeflate = "0.3"
+
+[features]
+default = []
+gpu = ["dep:ash", "skia-safe/ganesh", "skia-safe/vulkan"]

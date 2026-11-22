@@ -1,0 +1,48 @@
+[package]
+name = "aurorix-bot"
+version.workspace = true
+edition.workspace = true
+rust-version.workspace = true
+license.workspace = true
+
+[dependencies]
+aurorix-admin.workspace = true
+aurorix-api.workspace = true
+aurorix-assets.workspace = true
+aurorix-buttons.workspace = true
+aurorix-core.workspace = true
+aurorix-db.workspace = true
+aurorix-gateway.workspace = true
+aurorix-log.workspace = true
+aurorix-plugin.workspace = true
+aurorix-protocol.workspace = true
+aurorix-render.workspace = true
+aurorix-sdk.workspace = true
+aurorix-template.workspace = true
+arc-swap.workspace = true
+bytes.workspace = true
+axum = "0.8"
+chrono.workspace = true
+dashmap.workspace = true
+serde.workspace = true
+serde_json.workspace = true
+thiserror.workspace = true
+tokio = { workspace = true, features = [
+    "rt-multi-thread",
+    "macros",
+    "time",
+    "sync",
+    "signal",
+    "net",
+] }
+
+[dev-dependencies]
+tokio = { workspace = true, features = [
+    "rt-multi-thread",
+    "macros",
+    "time",
+    "sync",
+    "test-util",
+] }
+ed25519-dalek = "2"
+tower = { version = "0.5", features = ["util"] }

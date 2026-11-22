@@ -1,0 +1,101 @@
+[
+  {
+    "name": "sgame",
+    "enabled": true,
+    "priority": 300,
+    "config": {
+      "bucketUrl": "https://download.nature.qq.com",
+      "host": "sgame-data-service-1252931805.cos.ap-nanjing.myqcloud.com",
+      "secretId": "REDACTED-SECRET-ID",
+      "secretKey": "REDACTED-SECRET-KEY"
+    }
+  },
+  {
+    "name": "announce",
+    "enabled": true,
+    "priority": 160,
+    "config": {
+      "cookie": "p_skey=REDACTED; skey=REDACTED; uin=o0; p_uin=o0"
+    }
+  },
+  {
+    "name": "homework",
+    "enabled": true,
+    "priority": 120,
+    "config": {
+      "cookie": "p_skey=REDACTED; skey=REDACTED; uin=o0; p_uin=o0"
+    }
+  },
+  {
+    "name": "chatglm",
+    "enabled": false,
+    "priority": 200
+  },
+  {
+    "name": "chinaunicom",
+    "enabled": false,
+    "priority": 70,
+    "config": {
+      "appChannel": "oppo_woapp",
+      "appVersion": "7.8.2"
+    }
+  },
+  {
+    "name": "mihoyo",
+    "enabled": false,
+    "priority": 0,
+    "config": {
+      "cookie": ""
+    }
+  },
+  {
+    "name": "qqstream",
+    "enabled": false,
+    "priority": 0,
+    "config": {
+      "cookie": "",
+      "pSkey": "",
+      "skey": "",
+      "uin": ""
+    }
+  },
+  {
+    "name": "qzone",
+    "enabled": false,
+    "priority": 0,
+    "config": {
+      "cookie": "",
+      "pSkey": "",
+      "skey": "",
+      "pUin": ""
+    }
+  },
+  {
+    "name": "bilibili",
+    "enabled": false,
+    "priority": 0,
+    "config": {
+      "biliJct": "",
+      "sessdata": ""
+    }
+  },
+  {
+    "name": "smms",
+    "enabled": false,
+    "priority": 0,
+    "config": {
+      "token": ""
+    }
+  },
+  {
+    "name": "sgame",
+    "enabled": true,
+    "priority": 10,
+    "config": {
+      "bucketUrl": "https://download.nature.qq.com",
+      "host": "sgame-data-service-1252931805.cos.ap-nanjing.myqcloud.com",
+      "secretId": "REDACTED-SECRET-ID",
+      "secretKey": "REDACTED-SECRET-KEY"
+    }
+  }
+]

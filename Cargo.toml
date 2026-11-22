@@ -1,0 +1,118 @@
+[workspace]
+resolver = "2"
+members = ["crates/*", "plugins/*", "xtask"]
+
+[workspace.package]
+version = "0.1.0"
+edition = "2021"
+rust-version = "1.89"
+license = "MIT"
+
+[workspace.dependencies]
+libc = "0.2"
+aurorix-core = { path = "crates/aurorix-core" }
+aurorix-template = { path = "crates/aurorix-template" }
+aurorix-buttons = { path = "crates/aurorix-buttons" }
+aurorix-macros = { path = "crates/aurorix-macros" }
+aurorix-sdk = { path = "crates/aurorix-sdk" }
+aurorix-protocol = { path = "crates/aurorix-protocol" }
+aurorix-db = { path = "crates/aurorix-db" }
+aurorix-log = { path = "crates/aurorix-log" }
+aurorix-admin = { path = "crates/aurorix-admin" }
+aurorix-render = { path = "crates/aurorix-render" }
+aurorix-gateway = { path = "crates/aurorix-gateway" }
+aurorix-api = { path = "crates/aurorix-api" }
+aurorix-plugin = { path = "crates/aurorix-plugin" }
+aurorix-bot = { path = "crates/aurorix-bot" }
+aurorix-assets = { path = "crates/aurorix-assets" }
+arc-swap = "1"
+bytes = "1"
+chrono = { version = "0.4", features = ["serde"] }
+axum = "0.8"
+base64 = "0.22"
+ed25519-dalek = "2"
+futures-util = "0.3"
+hex = "0.4"
+md-5 = "0.10"
+rand = "0.8"
+reqwest = { version = "0.12", default-features = false, features = [
+    "json",
+    "rustls-tls",
+    "multipart",
+    "stream",
+] }
+sha1 = "0.10"
+hmac = "0.12"
+percent-encoding = "2"
+webp = "0.3"
+rustls = { version = "0.23", default-features = false, features = ["ring", "std", "tls12"] }
+tokio-tungstenite = { version = "0.28", features = ["rustls-tls-webpki-roots"] }
+dashmap = "6"
+parking_lot = "0.12"
+proc-macro2 = "1"
+quote = "1"
+regex = "1"
+skia-safe = { version = "0.157", features = ["textlayout"] }
+serde = { version = "1", features = ["derive"] }
+serde_json = "1"
+sqlx = { version = "0.8", default-features = false, features = [
+    "runtime-tokio",
+    "postgres",
+    "chrono",
+    "json",
+] }
+syn = "2"
+thiserror = "2"
+tokio-stream = { version = "0.1", features = ["sync"] }
+tower = "0.5"
+tokio = { version = "1", features = [
+    "rt",
+    "rt-multi-thread",
+    "macros",
+    "sync",
+    "time",
+    "fs",
+] }
+
+[package]
+name = "aurorix"
+version.workspace = true
+edition.workspace = true
+rust-version.workspace = true
+license.workspace = true
+description = "Aurorix 机器人框架顶层入口"
+
+[dependencies]
+axum.workspace = true
+aurorix-api.workspace = true
+aurorix-admin.workspace = true
+aurorix-assets.workspace = true
+aurorix-bot.workspace = true
+aurorix-core.workspace = true
+aurorix-db.workspace = true
+aurorix-log.workspace = true
+aurorix-plugin.workspace = true
+aurorix-render.workspace = true
+aurorix-template.workspace = true
+serde_json.workspace = true
+aurorix-arcaea-plugin = { path = "../Plugins/aurorix-arcaea-plugin" }
+aurorix-bottle-plugin = { path = "../Plugins/aurorix-bottle-plugin" }
+aurorix-link-plugin = { path = "../Plugins/aurorix-link-plugin" }
+aurorix-music-plugin = { path = "../Plugins/aurorix-music-plugin" }
+aurorix-okamikko-plugin = { path = "../Plugins/aurorix-okamikko-plugin" }
+aurorix-phigros-plugin = { path = "../Plugins/aurorix-phigros-plugin" }
+aurorix-rollpig-plugin = { path = "../Plugins/aurorix-rollpig-plugin" }
+tokio.workspace = true
+
+[profile.release]
+lto = "thin"
+codegen-units = 1
+panic = "abort"
+
+[profile.dev]
+debug = 0
+strip = "debuginfo"
+
+[profile.test]
+debug = 0
+strip = "debuginfo"

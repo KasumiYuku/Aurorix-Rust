@@ -1,0 +1,20 @@
+[package]
+name = "aurorix-log"
+version.workspace = true
+edition.workspace = true
+rust-version.workspace = true
+license.workspace = true
+
+[dependencies]
+aurorix-core.workspace = true
+chrono = { workspace = true, features = ["clock"] }
+parking_lot.workspace = true
+serde.workspace = true
+thiserror.workspace = true
+tokio.workspace = true
+
+regex.workspace = true
+
+[dev-dependencies]
+serde_json.workspace = true
+tokio.workspace = true
