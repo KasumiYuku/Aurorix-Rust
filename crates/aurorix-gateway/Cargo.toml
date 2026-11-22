@@ -1,0 +1,25 @@
+[package]
+name = "aurorix-gateway"
+version.workspace = true
+edition.workspace = true
+rust-version.workspace = true
+license.workspace = true
+
+[dependencies]
+aurorix-log.workspace = true
+aurorix-protocol.workspace = true
+axum.workspace = true
+chrono.workspace = true
+ed25519-dalek.workspace = true
+futures-util.workspace = true
+hex.workspace = true
+rand.workspace = true
+rustls.workspace = true
+serde.workspace = true
+serde_json.workspace = true
+thiserror.workspace = true
+tokio = { workspace = true, features = ["net", "io-util"] }
+tokio-tungstenite.workspace = true
+
+[dev-dependencies]
+tokio = { workspace = true, features = ["net", "io-util", "test-util"] }

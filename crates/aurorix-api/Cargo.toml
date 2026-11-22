@@ -1,0 +1,25 @@
+[package]
+name = "aurorix-api"
+version.workspace = true
+edition.workspace = true
+rust-version.workspace = true
+license.workspace = true
+
+[dependencies]
+aurorix-buttons.workspace = true
+aurorix-core.workspace = true
+aurorix-protocol.workspace = true
+arc-swap.workspace = true
+base64.workspace = true
+dashmap.workspace = true
+hex.workspace = true
+md-5.workspace = true
+sha1.workspace = true
+reqwest.workspace = true
+serde.workspace = true
+serde_json.workspace = true
+thiserror.workspace = true
+tokio.workspace = true
+
+[dev-dependencies]
+axum.workspace = true

@@ -1,0 +1,483 @@
+# aurorix-db API 索引
+
+> 本文件由 `cargo run -p xtask -- gen-api` 从源码生成，请勿手改。完整签名与泛型约束用 `cargo doc --workspace --no-deps --open` 查看。
+
+## `src/admin.rs`
+
+- `pub type AdminFuture<'a, T> = Pin<Box<dyn Future<Output = T> + Send + 'a>>`
+- `pub const DEFAULT_BAN_MESSAGE: &str = "您的账号因违反Bot使用协议已被封禁"`
+- `pub const BAN_MESSAGE_LIMIT: usize = 2000`
+- `pub const ROSTER_KEY: &str = "roster"`
+- `pub const PANEL_KEY: &str = "menu:panel"`
+- `pub const SNAPSHOT_INDEX_KEY: &str = "menu:snapshot:index"`
+- `pub const SNAPSHOT_KEY_PREFIX: &str = "menu:snapshot:"`
+- `pub const PANEL_SNAPSHOT_LIMIT: usize = 20`
+- `pub const PANEL_TARGET_ALL: &str = "all"`
+- `pub const ASSET_PROVIDERS_KEY: &str = "assets:providers"`
+- `pub const ASSET_WHITELIST_KEY: &str = "assets:whitelist"`
+- `pub trait AdminKv: Send + Sync`
+- `pub struct PgKv`
+- `impl PgKv`
+  - `pub fn new(kv: KvStore) -> Self`
+  - `pub fn kv(&self) -> &KvStore`
+- `pub fn now_rfc3339() -> String`
+- `pub struct BanEntry`
+- `impl BanEntry`
+  - `pub fn new(openid: impl Into<String>) -> Self`
+  - `pub fn with_message(mut self, message: impl Into<String>) -> Self`
+  - `pub fn with_note(mut self, note: impl Into<String>) -> Self`
+  - `pub fn with_at(mut self, at: impl Into<String>) -> Self`
+  - `pub fn text(&self) -> &str`
+  - `pub fn validate(&self) -> DbResult<()>`
+- `pub struct BanStore`
+- `impl BanStore`
+  - `pub fn new(kv: Arc<dyn AdminKv>) -> Self`
+  - `pub fn from_kv(kv: KvStore) -> Self`
+- `pub struct PanelItem`
+- `pub struct PanelBody`
+- `pub struct PanelRecord`
+- `pub struct SnapshotIndexEntry`
+- `pub struct PanelSnapshot`
+- `pub fn snapshot_key(panel_id: &str, seq: u64) -> String`
+- `pub fn snapshot_name(panel_id: &str, seq: u64) -> String`
+- `pub struct PanelStore`
+- `impl PanelStore`
+  - `pub fn new(kv: Arc<dyn AdminKv>) -> Self`
+  - `pub fn from_kv(kv: KvStore) -> Self`
+- `pub struct AssetProvider`
+- `pub struct AssetStore`
+- `impl AssetStore`
+  - `pub fn new(kv: Arc<dyn AdminKv>) -> Self`
+  - `pub fn from_kv(kv: KvStore) -> Self`
+
+## `src/batch.rs`
+
+- `pub const DEFAULT_MAX_BATCH: usize = 256`
+- `pub const DEFAULT_CAPACITY: usize = 4096`
+- `pub const DEFAULT_FLUSH_INTERVAL: Duration = Duration::from_millis(250)`
+- `pub const TRIM_AFTER_ROWS: usize = 64`
+- `pub const STATS_CONVERSATIONS_UNNEST: &str = "INSERT INTO stats_conversations (scene, id, name, msg_count, friend)\n\t\tSELECT * FROM UNNEST($1::text[], $2::text[], $3::text[], $4::bigint[], $5::boolean[])\n\t\tON CONFLICT (scene, id) DO UPDATE SET\n\t\t\tmsg_count = stats_conversations.msg_count + excluded.msg_count,\n\t\t\tname = CASE WHEN excluded.name <> '' THEN excluded.name ELSE stats_conversations.name END,\n\t\t\tfriend = stats_conversations.friend OR excluded.friend"`
+- `pub const STATS_DAILY_UNNEST: &str = "INSERT INTO stats_daily (day, recv, sent, button)\n\t\tSELECT * FROM UNNEST($1::text[], $2::bigint[], $3::bigint[], $4::bigint[])\n\t\tON CONFLICT (day) DO UPDATE SET\n\t\t\trecv = stats_daily.recv + excluded.recv,\n\t\t\tsent = stats_daily.sent + excluded.sent,\n\t\t\tbutton = stats_daily.button + excluded.button"`
+- `pub const INBOX_MESSAGES_UNNEST: &str = "INSERT INTO inbox_messages (conv_id, direction, sender_id, sender_name, content, platform_msg_id, created_at)\n\t\tSELECT * FROM UNNEST($1::text[], $2::text[], $3::text[], $4::text[], $5::text[], $6::text[], $7::bigint[])"`
+- `pub const INBOX_CONVERSATIONS_UNNEST: &str = "INSERT INTO inbox_conversations (id, kind, name, last_at, last_preview)\n\t\tSELECT id, kind, '', last_at, last_preview\n\t\tFROM UNNEST($1::text[], $2::text[], $3::bigint[], $4::text[]) AS merged (id, kind, last_at, last_preview)\n\t\tON CONFLICT (id) DO UPDATE SET\n\t\t\tkind = excluded.kind,\n\t\t\tlast_at = GREATEST(inbox_conversations.last_at, excluded.last_at),\n\t\t\tlast_preview = CASE\n\t\t\t\tWHEN excluded.last_at >= inbox_conversations.last_at THEN excluded.last_preview\n\t\t\t\tELSE inbox_conversations.last_preview END"`
+- `pub type BatchFuture<'a> = Pin<Box<dyn Future<Output = DbResult<usize>> + Send + 'a>>`
+- `pub enum DurabilityPolicy`
+- `impl DurabilityPolicy`
+  - `pub const fn retains_on_failure(self) -> bool`
+- `pub struct BatchConfig`
+- `impl BatchConfig`
+  - `pub const fn new() -> Self`
+  - `pub const fn immediate() -> Self`
+  - `pub const fn with_max_batch(mut self, max_batch: usize) -> Self`
+  - `pub const fn with_capacity(mut self, capacity: usize) -> Self`
+  - `pub const fn with_flush_interval(mut self, flush_interval: Duration) -> Self`
+  - `pub const fn with_durability(mut self, durability: DurabilityPolicy) -> Self`
+  - `pub const fn with_retain_on_failure(mut self, retain_on_failure: bool) -> Self`
+- `pub trait BatchMerge: Clone + Default + Send + 'static`
+- `pub trait BatchSink<T: BatchMerge>: Send + Sync`
+- `pub struct FlushReport`
+- `pub struct BatcherStats`
+- `pub struct Batcher<T: BatchMerge, S: BatchSink<T>>`
+- `impl <T: BatchMerge, S: BatchSink<T>> Batcher<T, S>`
+  - `pub fn new(sink: Arc<S>, config: BatchConfig) -> Self`
+  - `pub fn config(&self) -> BatchConfig`
+  - `pub fn sink(&self) -> &Arc<S>`
+  - `pub fn pending_rows(&self) -> usize`
+  - `pub fn is_running(&self) -> bool`
+  - `pub fn stats(&self) -> BatcherStats`
+  - `pub fn absorb(&self, delta: T) -> DbResult<()>`
+  - `pub fn start_background(self: &Arc<Self>, interval: Duration) -> DbResult<()>`
+- `pub struct ConversationDelta`
+- `impl ConversationDelta`
+- `pub struct InboxBatch`
+- `impl InboxBatch`
+  - `pub fn is_empty(&self) -> bool`
+  - `pub fn rows(&self) -> usize`
+  - `pub fn note_conversation( …`
+  - `pub fn push_message(&mut self, message: Message) -> &mut Self`
+- `pub struct StatsFlushSink`
+- `impl StatsFlushSink`
+  - `pub fn new(pool: PgPool) -> Self`
+  - `pub fn with_keep_days(pool: PgPool, keep_days: i64) -> Self`
+  - `pub fn pool(&self) -> &PgPool`
+- `pub struct InboxFlushSink`
+- `impl InboxFlushSink`
+  - `pub fn new(pool: PgPool) -> Self`
+  - `pub fn pool(&self) -> &PgPool`
+- `pub type StatsBatcher = Batcher<StatsBatch, StatsFlushSink>`
+- `pub type InboxBatcher = Batcher<InboxBatch, InboxFlushSink>`
+- `pub struct WriteBehind`
+- `impl WriteBehind`
+  - `pub fn start_background(&self, interval: Duration) -> DbResult<()>`
+  - `pub fn stats_counters(&self) -> BatcherStats`
+  - `pub fn inbox_counters(&self) -> BatcherStats`
+- `pub fn stats_rows_of(batch: &StatsBatch) -> usize`
+- `pub fn conv_delta(name: &str, msg: i64, friend: bool) -> ConvDelta`
+- `pub fn day_delta(recv: i64, sent: i64, button: i64) -> DayDelta`
+
+## `src/cache.rs`
+
+- `pub type CacheFuture<'a, T> = Pin<Box<dyn Future<Output = DbResult<T>> + Send + 'a>>`
+- `pub enum StalePolicy`
+- `pub struct CacheStats`
+- `pub struct HotCache<V: Send + Sync + 'static>`
+- `impl <V: Send + Sync + 'static> HotCache<V>`
+  - `pub fn new() -> Self`
+  - `pub fn with_policy(policy: StalePolicy) -> Self`
+  - `pub fn policy(&self) -> StalePolicy`
+  - `pub fn is_loaded(&self) -> bool`
+  - `pub fn get(&self) -> Option<Arc<V>>`
+  - `pub fn store(&self, value: Arc<V>)`
+  - `pub fn invalidate(&self)`
+  - `pub fn clear_stale(&self)`
+  - `pub fn stats(&self) -> CacheStats`
+- `pub struct RosterView`
+- `impl RosterView`
+  - `pub fn from_entries(entries: impl IntoIterator<Item = BanEntry>) -> Self`
+  - `pub fn contains(&self, openid: &str) -> bool`
+  - `pub fn get(&self, openid: &str) -> Option<&Arc<BanEntry>>`
+  - `pub fn text_of(&self, openid: &str) -> Option<&str>`
+  - `pub fn len(&self) -> usize`
+  - `pub fn is_empty(&self) -> bool`
+  - `pub fn entries(&self) -> impl Iterator<Item = &Arc<BanEntry>>`
+  - `pub fn openids(&self) -> Vec<&str>`
+- `pub trait RosterSource: Send + Sync`
+- `pub struct BanCache<S: RosterSource = BanStore>`
+- `impl <S: RosterSource> BanCache<S>`
+  - `pub fn new(source: S) -> Self`
+  - `pub fn with_policy(source: S, policy: StalePolicy) -> Self`
+  - `pub fn from_shared(source: Arc<S>) -> Self`
+  - `pub fn source(&self) -> &Arc<S>`
+  - `pub fn cached(&self) -> Option<Arc<RosterView>>`
+  - `pub fn stats(&self) -> CacheStats`
+  - `pub fn invalidate(&self)`
+- `impl BanCache<BanStore>`
+  - `pub fn from_store(store: BanStore) -> Self`
+
+## `src/config.rs`
+
+- `pub const DEFAULT_DATABASE: &str = "postgres://aurorix@127.0.0.1:5432/aurorix?sslmode=disable"`
+- `pub const DEFAULT_DATA_DIR: &str = "data"`
+- `pub const DEFAULT_PROXY: &str = "https://api.bot.qq.com"`
+- `pub const DEFAULT_LOG_LEVEL: &str = "info"`
+- `pub const DEFAULT_OVERRIDE_DIR: &str = "templates/override"`
+- `pub const DEFAULT_RELOAD_SECONDS: u64 = 3`
+- `pub const MAX_IMAGE_SIDE: u32 = 4096`
+- `pub const CONFIG_FILE: &str = "./config.json"`
+- `pub struct Maintenance`
+- `pub struct Deny`
+- `pub struct AccessRule`
+- `pub struct AccessConfig`
+- `pub struct TemplatesConfig`
+- `pub struct AppConfig`
+- `pub fn default_intents() -> Vec<String>`
+- `impl AppConfig`
+  - `pub fn load(path: impl AsRef<Path>) -> DbResult<Self>`
+  - `pub fn normalize(&mut self)`
+  - `pub fn database_url(&self) -> &str`
+  - `pub fn protocol(&self) -> &str`
+  - `pub fn listen_addr(&self) -> &str`
+  - `pub fn data_dir(&self) -> &str`
+  - `pub fn log_level(&self) -> &str`
+  - `pub fn upload_threshold(&self) -> i64`
+  - `pub fn image_max_width(&self) -> u32`
+  - `pub fn image_max_height(&self) -> u32`
+  - `pub fn intents(&self) -> Vec<String>`
+  - `pub fn prefixes(&self) -> Vec<String>`
+  - `pub fn retry_when(&self) -> Vec<i32>`
+  - `pub fn templates(&self) -> TemplatesConfig`
+  - `pub fn maintenance_message(&self) -> &str`
+  - `pub fn plugin_settings_for(&self, plugin_id: &str) -> BTreeMap<String, Value>`
+  - `pub fn plugin_access_for(&self, plugin_id: &str) -> AccessConfig`
+  - `pub fn footer_lines(&self, scene: aurorix_core::Scene) -> Vec<String>`
+  - `pub fn save(&self, path: impl AsRef<Path>) -> DbResult<()>`
+  - `pub fn persist(&mut self, path: impl AsRef<Path>, keys: &[&str]) -> DbResult<()>`
+  - `pub fn save_plugin_settings( …`
+  - `pub fn save_plugin_access( …`
+  - `pub fn apply_core_keys(&mut self, updates: &BTreeMap<String, Value>) -> DbResult<()>`
+  - `pub fn apply_core_key(&mut self, key: &str, value: &Value) -> DbResult<()>`
+- `pub fn clean_strings(lines: Vec<String>) -> Vec<String>`
+- `pub fn is_postgres_url(value: &str) -> bool`
+
+## `src/config_cache.rs`
+
+- `pub const CONFIG_NAMESPACE: &str = "config"`
+- `pub const KV_SCAN: &str =`
+- `pub const DEFAULT_CONFIG_LIMIT_BYTES: usize = 1 << 20`
+- `pub struct ConfigCacheStats`
+- `pub struct ConfigCache`
+- `impl ConfigCache`
+  - `pub fn new(store: KvStore) -> Self`
+  - `pub fn with_limit(mut self, limit_bytes: usize) -> Self`
+  - `pub fn global(store: KvStore) -> Self`
+  - `pub fn namespace(&self) -> &str`
+  - `pub fn scope(&self) -> &str`
+  - `pub fn limit_bytes(&self) -> usize`
+  - `pub fn is_loaded(&self) -> bool`
+  - `pub fn len(&self) -> usize`
+  - `pub fn is_empty(&self) -> bool`
+  - `pub fn keys(&self) -> Vec<String>`
+  - `pub fn stats(&self) -> ConfigCacheStats`
+  - `pub fn get_raw(&self, key: &str) -> Option<Arc<Value>>`
+  - `pub fn invalidate(&self, key: &str)`
+  - `pub fn invalidate_all(&self)`
+  - `pub fn insert_shared(&self, key: &str, value: Arc<Value>)`
+  - `pub fn seed(&self, entries: impl IntoIterator<Item = (String, Value)>)`
+  - `pub fn store_raw(&self, key: &str, value: Value)`
+
+## `src/doctor.rs`
+
+- `pub const COLUMNS_QUERY: &str = "SELECT table_name, column_name, data_type, is_nullable\n\t\tFROM information_schema.columns\n\t\tWHERE table_schema = current_schema() AND table_name = ANY($1)\n\t\tORDER BY table_name, ordinal_position"`
+- `pub const INDEXES_QUERY: &str = "SELECT tablename, indexname, indexdef FROM pg_indexes\n\t\tWHERE schemaname = current_schema() AND tablename = ANY($1)"`
+- `pub const TABLES_QUERY: &str = "SELECT table_name FROM information_schema.tables\n\t\tWHERE table_schema = current_schema() AND table_type = 'BASE TABLE'\n\t\tORDER BY table_name"`
+- `pub const COUNT_QUERY: &str = "SELECT count(*) FROM "`
+- `pub struct TypeMismatch`
+- `impl TypeMismatch`
+  - `pub fn describe(&self) -> String`
+- `pub struct TableReport`
+- `pub struct SchemaReport`
+- `impl SchemaReport`
+  - `pub fn table(&self, name: &str) -> Option<&TableReport>`
+  - `pub fn incompatible_tables(&self) -> Vec<&TableReport>`
+  - `pub fn compatible_count(&self) -> usize`
+
+## `src/error.rs`
+
+- `pub enum DbError`
+- `pub type DbResult<T> = Result<T, DbError>`
+
+## `src/inbox.rs`
+
+- `pub const MAX_PER_CONVERSATION: i64 = 500`
+- `pub const MAX_AGE_DAYS: i64 = 90`
+- `pub const PREVIEW_RUNES: usize = 60`
+- `pub const DEFAULT_PAGE_SIZE: i64 = 50`
+- `pub const MAX_PAGE_SIZE: i64 = 200`
+- `pub type MessageRow = (i64, String, String, String, String, String, String, i64)`
+- `pub enum Direction`
+- `impl Direction`
+  - `pub const fn as_str(self) -> &'static str`
+  - `pub fn parse(raw: &str) -> Self`
+- `pub struct Conversation`
+- `pub struct Message`
+- `pub const INSERT_MESSAGE: &str = "INSERT INTO inbox_messages (conv_id, direction, sender_id, sender_name, content, platform_msg_id, created_at)\n\t\t VALUES ($1, $2, $3, $4, $5, $6, $7)"`
+- `pub const UPSERT_CONVERSATION: &str = "INSERT INTO inbox_conversations (id, kind, name, last_at, last_preview) VALUES ($1, $2, '', $3, $4)\n\t\t ON CONFLICT (id) DO UPDATE SET\n\t\t kind = excluded.kind,\n\t\t last_at = GREATEST(inbox_conversations.last_at, excluded.last_at),\n\t\t last_preview = CASE\n\t\t WHEN excluded.last_at >= inbox_conversations.last_at THEN excluded.last_preview\n\t\t ELSE inbox_conversations.last_preview END"`
+- `pub const SELECT_CONVERSATIONS: &str =`
+- `pub const SELECT_CONVERSATIONS_PAGE: &str = "SELECT id, kind, name, last_at, last_preview FROM inbox_conversations ORDER BY last_at DESC, id LIMIT $1 OFFSET $2"`
+- `pub const SELECT_CONVERSATION: &str =`
+- `pub const UPDATE_NAME: &str =`
+- `pub const SELECT_NAME: &str = "SELECT name FROM inbox_conversations WHERE id = $1"`
+- `pub const TRIM_AGE: &str = "DELETE FROM inbox_messages WHERE created_at < $1"`
+- `pub const TRIM_FULL_CONVERSATIONS: &str =`
+- `pub const TRIM_CONVERSATION: &str = "DELETE FROM inbox_messages WHERE conv_id = $1 AND id <= (\n\t\t\t SELECT id FROM inbox_messages WHERE conv_id = $2 ORDER BY id DESC LIMIT 1 OFFSET $3)"`
+- `pub const SEED_FROM_STATS: &str = "INSERT INTO inbox_conversations (id, kind, name, last_at, last_preview)\n\t\t SELECT id, scene, name, 0, '' FROM stats_conversations\n\t\t ON CONFLICT (id) DO NOTHING"`
+- `pub struct InboxStore`
+- `impl InboxStore`
+  - `pub fn new(pool: PgPool) -> Self`
+  - `pub fn pool(&self) -> &PgPool`
+- `pub fn preview(content: &str) -> String`
+
+## `src/kv.rs`
+
+- `pub const SCOPE_GLOBAL: &str = "global"`
+- `pub const SCOPE_PLUGIN: &str = "plugin"`
+- `pub const SCOPE_COMMAND: &str = "command"`
+- `pub const SCOPE_USER: &str = "user"`
+- `pub const KV_UPSERT: &str = "INSERT INTO kv_data (scope, namespace, key, value, updated_at)\n\t\tVALUES ($1, $2, $3, $4, now())\n\t\tON CONFLICT (scope, namespace, key) DO UPDATE SET\n\t\t\tvalue = excluded.value,\n\t\t\tupdated_at = now()"`
+- `pub const KV_SELECT: &str =`
+- `pub const KV_EXISTS: &str =`
+- `pub const KV_DELETE: &str = "DELETE FROM kv_data WHERE scope = $1 AND namespace = $2 AND key = $3"`
+- `pub const KV_CLEAR: &str = "DELETE FROM kv_data WHERE scope = $1 AND namespace = $2"`
+- `pub const KV_LOCK: &str = "SELECT pg_advisory_xact_lock(hashtextextended($1, 0))"`
+- `pub struct KvStore`
+- `impl KvStore`
+  - `pub fn new(pool: PgPool, scope: impl Into<String>, namespace: impl Into<String>) -> Self`
+  - `pub fn global(pool: PgPool) -> Self`
+  - `pub fn plugin(pool: PgPool, plugin_id: &str) -> Self`
+  - `pub fn command(pool: PgPool, plugin_id: &str, command_id: &str) -> Self`
+  - `pub fn user(pool: PgPool, user_id: &str) -> Self`
+  - `pub fn scene(pool: PgPool, scene: Scene, id: &str) -> Self`
+  - `pub fn scope(&self) -> &str`
+  - `pub fn namespace(&self) -> &str`
+  - `pub fn pool(&self) -> &PgPool`
+
+## `src/lib.rs`
+
+- `pub use admin::{ now_rfc3339, snapshot_key, snapshot_name, AdminFuture, AdminKv, AssetProvider, AssetStore, BanEntry, BanStore, PanelBody, PanelItem, PanelRecord, PanelSnapshot, PanelStore, PgKv, SnapshotIndexEntry, ASSET_PROVIDERS_KEY, ASSET_WHITELIST_KEY, BAN_MESSAGE_LIMIT, DEFAULT_BAN_MESSAGE, PANEL_KEY, PANEL_SNAPSHOT_LIMIT, PANEL_TARGET_ALL, ROSTER_KEY, SNAPSHOT_INDEX_KEY, SNAPSHOT_KEY_PREFIX, }`
+- `pub use batch::{ conv_delta, day_delta, stats_rows_of, BatchConfig, BatchFuture, BatchMerge, BatchSink, Batcher, BatcherStats, ConversationDelta, DurabilityPolicy, FlushReport, InboxBatch, InboxBatcher, InboxFlushSink, StatsBatcher, StatsFlushSink, WriteBehind, DEFAULT_CAPACITY, DEFAULT_FLUSH_INTERVAL, DEFAULT_MAX_BATCH, INBOX_CONVERSATIONS_UNNEST, INBOX_MESSAGES_UNNEST, STATS_CONVERSATIONS_UNNEST, STATS_DAILY_UNNEST, }`
+- `pub use cache::{ BanCache, CacheFuture, CacheStats, HotCache, RosterSource, RosterView, StalePolicy, }`
+- `pub use config::{ AccessConfig, AccessRule, AppConfig, Deny, Maintenance, TemplatesConfig, CONFIG_FILE, DEFAULT_DATABASE, DEFAULT_DATA_DIR, DEFAULT_OVERRIDE_DIR, DEFAULT_RELOAD_SECONDS, }`
+- `pub use config_cache::{ ConfigCache, ConfigCacheStats, CONFIG_NAMESPACE, DEFAULT_CONFIG_LIMIT_BYTES, KV_SCAN, }`
+- `pub use doctor::{ verify_existing_schema, SchemaReport, TableReport, TypeMismatch, COLUMNS_QUERY, INDEXES_QUERY, TABLES_QUERY, }`
+- `pub use error::{DbError, DbResult}`
+- `pub use inbox::{Conversation, Direction, InboxStore, Message}`
+- `pub use kv::{KvStore, SCOPE_COMMAND, SCOPE_GLOBAL, SCOPE_PLUGIN, SCOPE_USER}`
+- `pub use plugin_db::{ BulkheadPermit, InMemoryMigrationExecutor, MigrationExecutor, MigrationFuture, MigrationRegistry, MigrationReport, MigrationStep, PgMigrationExecutor, PluginBulkheadStats, PluginDb, PluginDbMetrics, PluginDbRegistry, RegistryConfig, DEFAULT_MAX_CONCURRENT, DEFAULT_RESERVED_CORE_CONNECTIONS, PLUGIN_MIGRATIONS_DDL, PLUGIN_MIGRATIONS_TABLE, PLUGIN_MIGRATION_RECORD, PLUGIN_MIGRATION_VERSIONS, }`
+- `pub use pool::Db`
+- `pub use schema::{ core_table, ColumnSpec, TableSpec, CORE_TABLES, CORE_TABLE_NAMES, INBOX_CONVERSATIONS_COLUMNS, INBOX_MESSAGES_COLUMNS, KV_DATA_COLUMNS, STATS_CONVERSATIONS_COLUMNS, STATS_DAILY_COLUMNS, STATS_MIGRATIONS_COLUMNS, }`
+- `pub use stats::{ ConvDelta, ConversationRow, Counts, DayDelta, DayStat, LifeTotals, StatsBatch, StatsStore, StatsView, }`
+
+## `src/plugin_db.rs`
+
+- `pub const PLUGIN_MIGRATIONS_TABLE: &str = "plugin_migrations"`
+- `pub const PLUGIN_MIGRATIONS_DDL: &str = "CREATE TABLE IF NOT EXISTS plugin_migrations (\n\tplugin_id TEXT NOT NULL,\n\tversion BIGINT NOT NULL,\n\tname TEXT NOT NULL,\n\tapplied_at TIMESTAMPTZ NOT NULL DEFAULT now(),\n\tPRIMARY KEY (plugin_id, version)\n)"`
+- `pub const PLUGIN_MIGRATION_VERSIONS: &str =`
+- `pub const PLUGIN_MIGRATION_RECORD: &str = "INSERT INTO plugin_migrations (plugin_id, version, name) VALUES ($1, $2, $3) ON CONFLICT (plugin_id, version) DO NOTHING"`
+- `pub const DEFAULT_MAX_CONCURRENT: usize = 4`
+- `pub const DEFAULT_RESERVED_CORE_CONNECTIONS: usize = 4`
+- `pub type MigrationFuture<'a, T> = Pin<Box<dyn Future<Output = DbResult<T>> + Send + 'a>>`
+- `pub struct MigrationStep`
+- `pub struct MigrationReport`
+- `impl MigrationReport`
+  - `pub fn is_empty(&self) -> bool`
+  - `pub fn applied_count(&self) -> usize`
+  - `pub fn skipped_count(&self) -> usize`
+- `pub trait MigrationExecutor: Send + Sync`
+- `pub struct PgMigrationExecutor`
+- `impl PgMigrationExecutor`
+  - `pub fn new(pool: PgPool) -> Self`
+  - `pub fn pool(&self) -> &PgPool`
+- `pub struct InMemoryMigrationExecutor`
+- `impl InMemoryMigrationExecutor`
+  - `pub fn new() -> Self`
+  - `pub fn executed_sql(&self) -> Vec<(String, u32, &'static str)>`
+  - `pub fn executed_versions(&self, plugin_id: &str) -> Vec<u32>`
+  - `pub fn stored_rows(&self, plugin_id: &str) -> Vec<(u32, String)>`
+- `pub struct MigrationRegistry`
+- `impl MigrationRegistry`
+  - `pub fn new(executor: Arc<dyn MigrationExecutor>) -> Self`
+  - `pub fn postgres(pool: PgPool) -> Self`
+  - `pub fn in_memory() -> Self`
+  - `pub fn executor(&self) -> &Arc<dyn MigrationExecutor>`
+  - `pub fn applied(&self, plugin_id: &str) -> Vec<u32>`
+- `pub struct PluginDbMetrics`
+- `impl PluginDbMetrics`
+  - `pub fn in_use(&self) -> usize`
+  - `pub fn wait_count(&self) -> u64`
+  - `pub fn acquisitions(&self) -> u64`
+  - `pub fn rejections(&self) -> u64`
+- `pub struct BulkheadPermit`
+- `impl BulkheadPermit`
+  - `pub fn is_held(&self) -> bool`
+- `pub struct PluginDb`
+- `impl PluginDb`
+  - `pub fn plugin_id(&self) -> &str`
+  - `pub fn kv(&self) -> &KvStore`
+  - `pub fn kv_owned(&self) -> KvStore`
+  - `pub fn max_concurrent(&self) -> usize`
+  - `pub fn available_permits(&self) -> usize`
+  - `pub fn permits_in_use(&self) -> usize`
+  - `pub fn wait_count(&self) -> u64`
+  - `pub fn metrics(&self) -> &Arc<PluginDbMetrics>`
+  - `pub fn applied_versions(&self) -> Vec<u32>`
+  - `pub fn try_acquire(&self) -> DbResult<BulkheadPermit>`
+  - `pub fn bulkhead_stats(&self) -> PluginBulkheadStats`
+- `pub struct PluginBulkheadStats`
+- `pub struct RegistryConfig`
+- `impl RegistryConfig`
+  - `pub const fn new(max_concurrent_per_plugin: usize, reserved_core_connections: usize) -> Self`
+- `pub struct PluginDbRegistry`
+- `impl PluginDbRegistry`
+  - `pub fn new(pool: PgPool, config: RegistryConfig) -> Self`
+  - `pub fn with_migrations( …`
+  - `pub fn config(&self) -> RegistryConfig`
+  - `pub fn migrations(&self) -> &Arc<MigrationRegistry>`
+  - `pub fn plugin(&self, plugin_id: &str) -> DbResult<Arc<PluginDb>>`
+  - `pub fn known_plugins(&self) -> Vec<String>`
+  - `pub fn reserved_core_connections(&self) -> usize`
+  - `pub fn plugin_budget(&self) -> usize`
+  - `pub fn total_permits(&self) -> usize`
+  - `pub fn remaining_budget(&self) -> usize`
+  - `pub fn bulkhead_stats(&self) -> Vec<PluginBulkheadStats>`
+  - `pub fn total_permits_in_use(&self) -> usize`
+
+## `src/pool.rs`
+
+- `pub const MIN_CONNECTIONS: u32 = 2`
+- `pub const MAX_IDLE_CONNECTIONS: u32 = 8`
+- `pub const MAX_LIFETIME_SECONDS: u64 = 3600`
+- `pub struct Db`
+- `impl Db`
+  - `pub fn config_cache(&self) -> Arc<ConfigCache>`
+  - `pub fn pool(&self) -> &PgPool`
+  - `pub fn clone_pool(&self) -> PgPool`
+  - `pub fn kv_global(&self) -> KvStore`
+  - `pub fn kv_plugin(&self, plugin_id: &str) -> KvStore`
+  - `pub fn inbox(&self) -> InboxStore`
+  - `pub fn stats(&self) -> StatsStore`
+  - `pub fn bans(&self) -> BanStore`
+  - `pub fn panels(&self) -> PanelStore`
+  - `pub fn assets(&self) -> AssetStore`
+  - `pub fn ban_cache(&self) -> BanCache`
+  - `pub fn stats_batcher(&self, config: BatchConfig) -> Arc<StatsBatcher>`
+  - `pub fn inbox_batcher(&self, config: BatchConfig) -> Arc<InboxBatcher>`
+  - `pub fn write_behind(&self, config: BatchConfig) -> WriteBehind`
+  - `pub fn plugin_registry(&self, config: RegistryConfig) -> PluginDbRegistry`
+
+## `src/schema.rs`
+
+- `pub const KV_DATA: &str = "CREATE TABLE IF NOT EXISTS kv_data (\n\tscope TEXT NOT NULL,\n\tnamespace TEXT NOT NULL,\n\tkey TEXT NOT NULL,\n\tvalue BYTEA NOT NULL,\n\tupdated_at TIMESTAMPTZ NOT NULL DEFAULT now(),\n\tPRIMARY KEY (scope, namespace, key)\n)"`
+- `pub const STATS_CONVERSATIONS: &str = "CREATE TABLE IF NOT EXISTS stats_conversations (\n\tscene TEXT NOT NULL,\n\tid TEXT NOT NULL,\n\tname TEXT NOT NULL DEFAULT '',\n\tmsg_count BIGINT NOT NULL DEFAULT 0,\n\tfriend BOOLEAN NOT NULL DEFAULT false,\n\tPRIMARY KEY (scene, id)\n)"`
+- `pub const STATS_CONVERSATIONS_FRIEND: &str =`
+- `pub const STATS_DAILY: &str = "CREATE TABLE IF NOT EXISTS stats_daily (\n\tday TEXT PRIMARY KEY,\n\trecv BIGINT NOT NULL DEFAULT 0,\n\tsent BIGINT NOT NULL DEFAULT 0,\n\tbutton BIGINT NOT NULL DEFAULT 0\n)"`
+- `pub const STATS_MIGRATIONS: &str = "CREATE TABLE IF NOT EXISTS stats_migrations (\n\tname TEXT PRIMARY KEY,\n\tat TIMESTAMPTZ NOT NULL DEFAULT now()\n)"`
+- `pub const STATS_CONVERSATIONS_INDEX: &str =`
+- `pub const INBOX_CONVERSATIONS: &str = "CREATE TABLE IF NOT EXISTS inbox_conversations (\n\tid TEXT PRIMARY KEY,\n\tkind TEXT NOT NULL,\n\tname TEXT NOT NULL DEFAULT '',\n\tlast_at BIGINT NOT NULL DEFAULT 0,\n\tlast_preview TEXT NOT NULL DEFAULT ''\n)"`
+- `pub const INBOX_MESSAGES: &str = "CREATE TABLE IF NOT EXISTS inbox_messages (\n\tid BIGINT GENERATED ALWAYS AS IDENTITY PRIMARY KEY,\n\tconv_id TEXT NOT NULL,\n\tdirection TEXT NOT NULL,\n\tsender_id TEXT NOT NULL DEFAULT '',\n\tsender_name TEXT NOT NULL DEFAULT '',\n\tcontent TEXT NOT NULL DEFAULT '',\n\tplatform_msg_id TEXT NOT NULL DEFAULT '',\n\tcreated_at BIGINT NOT NULL\n)"`
+- `pub const INBOX_MESSAGES_CONV_INDEX: &str =`
+- `pub const INBOX_MESSAGES_AT_INDEX: &str =`
+- `pub const STATEMENTS: [&str; 10] = [`
+- `pub struct ColumnSpec`
+- `pub struct TableSpec`
+- `pub const TEXT: &str = "text"`
+- `pub const BIGINT: &str = "bigint"`
+- `pub const BOOLEAN: &str = "boolean"`
+- `pub const BYTEA: &str = "bytea"`
+- `pub const TIMESTAMPTZ: &str = "timestamp with time zone"`
+- `pub const KV_DATA_COLUMNS: &[ColumnSpec] = &[`
+- `pub const STATS_CONVERSATIONS_COLUMNS: &[ColumnSpec] = &[`
+- `pub const STATS_DAILY_COLUMNS: &[ColumnSpec] = &[`
+- `pub const STATS_MIGRATIONS_COLUMNS: &[ColumnSpec] = &[`
+- `pub const INBOX_CONVERSATIONS_COLUMNS: &[ColumnSpec] = &[`
+- `pub const INBOX_MESSAGES_COLUMNS: &[ColumnSpec] = &[`
+- `pub const CORE_TABLES: &[TableSpec] = &[`
+- `pub fn core_table(name: &str) -> Option<&'static TableSpec>`
+- `pub const CORE_TABLE_NAMES: [&str; 6] = [`
+
+## `src/stats.rs`
+
+- `pub const KEEP_DAYS: i64 = 90`
+- `pub const TOP_LIMIT: i64 = 10`
+- `pub const CONV_UPSERT: &str = "INSERT INTO stats_conversations (scene, id, name, msg_count, friend) VALUES ($1, $2, $3, $4, $5)\n\t\tON CONFLICT (scene, id) DO UPDATE SET\n\t\t\tmsg_count = stats_conversations.msg_count + excluded.msg_count,\n\t\t\tname = CASE WHEN excluded.name <> '' THEN excluded.name ELSE stats_conversations.name END,\n\t\t\tfriend = stats_conversations.friend OR excluded.friend"`
+- `pub const DAY_UPSERT: &str = "INSERT INTO stats_daily (day, recv, sent, button) VALUES ($1, $2, $3, $4)\n\t\tON CONFLICT (day) DO UPDATE SET\n\t\t\trecv = stats_daily.recv + excluded.recv,\n\t\t\tsent = stats_daily.sent + excluded.sent,\n\t\t\tbutton = stats_daily.button + excluded.button"`
+- `pub const BACKFILL_GROUPS: &str = "INSERT INTO stats_conversations (scene, id, name, msg_count)\n\t\tSELECT $1, group_id, name, msg_count FROM stats_groups\n\t\tON CONFLICT DO NOTHING"`
+- `pub const BACKFILL_PEERS: &str = "INSERT INTO stats_conversations (scene, id, name, msg_count, friend)\n\t\tSELECT $1, peer_id, '', msg_count, true FROM stats_peers\n\t\tON CONFLICT (scene, id) DO UPDATE SET friend = true"`
+- `pub const MARK_MIGRATED: &str =`
+- `pub const MIGRATION_CHECK: &str = "SELECT EXISTS (SELECT 1 FROM stats_migrations WHERE name = $1)"`
+- `pub const READ_COUNTS: &str = "SELECT\n\t\t\tCOUNT(*) FILTER (WHERE scene = $1),\n\t\t\tCOUNT(*) FILTER (WHERE scene = $2),\n\t\t\tCOUNT(*) FILTER (WHERE scene = $3 OR scene = $4),\n\t\t\tCOUNT(*) FILTER (WHERE scene = $2 AND friend)\n\t\tFROM stats_conversations"`
+- `pub const TOP_CONVERSATIONS: &str = "SELECT scene, id, name, msg_count FROM stats_conversations\n\t\tORDER BY msg_count DESC, scene, id LIMIT $1"`
+- `pub const FRIEND_INSERT: &str =`
+- `pub const UNFRIEND_UPDATE: &str =`
+- `pub const TRIM_DAILY: &str = "DELETE FROM stats_daily WHERE day < $1"`
+- `pub const SUM_DAILY: &str = "SELECT COALESCE(SUM(recv),0)::bigint, COALESCE(SUM(sent),0)::bigint, COALESCE(SUM(button),0)::bigint FROM stats_daily"`
+- `pub const TODAY_DAILY: &str = "SELECT recv, sent, button FROM stats_daily WHERE day = $1"`
+- `pub const DAY_LAYOUT: &str = "%Y-%m-%d"`
+- `pub fn local_day_key(moment: chrono::DateTime<chrono::Local>) -> String`
+- `pub struct ConvDelta`
+- `pub struct DayDelta`
+- `pub struct StatsBatch`
+- `impl StatsBatch`
+  - `pub fn is_empty(&self) -> bool`
+  - `pub fn received(&mut self, scene: Scene, id: &str, name: &str) -> &mut Self`
+  - `pub fn count_day(&mut self, day: &str, recv: i64, sent: i64, button: i64) -> &mut Self`
+- `pub struct DayStat`
+- `pub struct ConversationRow`
+- `pub struct Counts`
+- `pub struct LifeTotals`
+- `pub struct StatsView`
+- `pub struct StatsStore`
+- `impl StatsStore`
+  - `pub fn new(pool: PgPool) -> Self`
+  - `pub fn with_keep_days(pool: PgPool, keep_days: i64) -> Self`
+  - `pub fn pool(&self) -> &PgPool`
+

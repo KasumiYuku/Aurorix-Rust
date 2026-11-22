@@ -1,0 +1,33 @@
+{
+  "port": 8080,
+  "listen_addr": "127.0.0.1",
+  "appid": "你的机器人 AppID",
+  "secret": "你的机器人 AppSecret",
+  "proxy": "https://api.bot.qq.com",
+  "protocol": "websocket",
+  "intents": [
+    "GROUP_AT_MESSAGE_CREATE",
+    "GROUP_MESSAGE_CREATE",
+    "C2C_MESSAGE_CREATE",
+    "INTERACTION_CREATE",
+    "GROUP_MEMBER_ADD",
+    "GROUP_MEMBER_REMOVE",
+    "MESSAGE_AUDIT_PASS",
+    "MESSAGE_AUDIT_REJECT"
+  ],
+  "database": "postgres://aurorix:密码@127.0.0.1:5432/aurorix?sslmode=disable",
+  "admin_password": "设置一个管理台密码",
+  "log_level": "info",
+  "render_pool": 4,
+  "global_markdown": false,
+  "plugin_settings": {
+    "example-rating": {
+      "backend_url": "http://127.0.0.1:2388"
+    }
+  },
+  "plugin_access": {
+    "example-rating": {
+      "default": { "mode": "on" }
+    }
+  }
+}

@@ -1,0 +1,28 @@
+[package]
+name = "aurorix-plugin"
+version.workspace = true
+edition.workspace = true
+rust-version.workspace = true
+license.workspace = true
+
+[dependencies]
+aurorix-buttons.workspace = true
+aurorix-core.workspace = true
+aurorix-db.workspace = true
+aurorix-render.workspace = true
+aurorix-sdk.workspace = true
+aurorix-template.workspace = true
+arc-swap.workspace = true
+bytes.workspace = true
+chrono.workspace = true
+dashmap.workspace = true
+serde.workspace = true
+serde_json.workspace = true
+thiserror.workspace = true
+tokio.workspace = true
+
+[dev-dependencies]
+aurorix-macros.workspace = true
+serde_json.workspace = true
+sqlx.workspace = true
+tokio = { workspace = true, features = ["test-util"] }
